@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>NyxoMenu</AssemblyName>
+    <RootNamespace>NyxoMenu</RootNamespace>
+    <Version>1.0.0</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>10.0</LangVersion>
+    <OutputPath>bin/$(Configuration)/net6.0/</OutputPath>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(MSBuildThisFileDirectory)..\BepInEx</BepInExDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BepInEx.Core" HintPath="$(BepInExDir)/core/BepInEx.Core.dll" Private="false" />
+    <Reference Include="BepInEx.Unity.IL2CPP" HintPath="$(BepInExDir)/core/BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="Il2CppInterop.Runtime" HintPath="$(BepInExDir)/core/Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(BepInExDir)/interop/UnityEngine.CoreModule.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="ValidateBepInExReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.Core.dll')" Text="BepInEx.Core.dll not found. Set -p:BepInExDir to the installed BepInEx directory." />
+    <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.Unity.IL2CPP.dll')" Text="BepInEx.Unity.IL2CPP.dll not found. Use a matching BepInEx 6 IL2CPP installation." />
+    <Error Condition="!Exists('$(BepInExDir)/interop/UnityEngine.CoreModule.dll')" Text="UnityEngine.CoreModule.dll not found in BepInEx/interop. Check your installation layout." />
+  </Target>
+</Project>
