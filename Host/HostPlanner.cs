@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using BepInEx;
 
@@ -8,7 +9,6 @@ internal sealed class HostPlanner
     private readonly Random _random = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        IncludeFields = true,
         WriteIndented = true
     };
 
@@ -27,10 +27,19 @@ internal sealed class HostPlanner
         {
             var path = PresetPath;
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
+            File.WriteAllText(path, JsonSerializer.Serialize(new HostPreset
+            {
+                Map = Map,
+                PlayerCount = PlayerCount,
+                Speed = Speed,
+                Cooldown = Cooldown,
+                Discussion = Discussion,
+                Roles = Roles,
+                Rules = Rules
+            }, JsonOptions));
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException)
         {
             return false;
         }
@@ -48,7 +57,7 @@ internal sealed class HostPlanner
                 PresetName = "Saved draft";
                 return true;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or System.Security.SecurityException)
             {
                 return false;
             }
@@ -70,7 +79,7 @@ internal sealed class HostPlanner
             PresetName = "Saved draft (legacy)";
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             return false;
         }
@@ -78,10 +87,10 @@ internal sealed class HostPlanner
 
     public void Randomize()
     {
-        PlayerCount = _random.Next(6, 16).ToString();
-        Speed = _random.Next(8, 16) / 10f + "x";
-        Cooldown = _random.Next(10, 46) + "s";
-        Discussion = _random.Next(15, 61) + "s";
+        PlayerCount = _random.Next(6, 16).ToString(CultureInfo.InvariantCulture);
+        Speed = (_random.Next(8, 16) / 10f).ToString("0.0", CultureInfo.InvariantCulture) + "x";
+        Cooldown = _random.Next(10, 46).ToString(CultureInfo.InvariantCulture) + "s";
+        Discussion = _random.Next(15, 61).ToString(CultureInfo.InvariantCulture) + "s";
         PresetName = "Random draft suggestion";
     }
 
@@ -96,17 +105,19 @@ internal sealed class HostPlanner
         Rules = saved.Rules ?? "";
     }
 
-    private sealed class HostPreset
-    {
-        public string Map = "";
-        public string PlayerCount = "10";
-        public string Speed = "1.0x";
-        public string Cooldown = "25s";
-        public string Discussion = "30s";
-        public string Roles = "";
-        public string Rules = "";
-    }
-
     private static string PresetPath => Path.Combine(BepInEx.Paths.ConfigPath, "NyxoMenu", "host-preset.json");
     private static string LegacyPresetPath => Path.Combine(BepInEx.Paths.ConfigPath, "NyxoMenu", "host-preset.txt");
+}
+
+public sealed class HostPreset
+{
+    public string Map { get; set; } = "";
+    public string PlayerCount { get; set; } = "10";
+    public string Speed { get; set; } = "1.0x";
+    public string Cooldown { get; set; } = "25s";
+    public string Discussion { get; set; } = "30s";
+    public string Roles { get; set; } = "";
+    public string Rules { get; set; } = "";
+
+    public HostPreset() { }
 }

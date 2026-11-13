@@ -25,7 +25,7 @@ internal sealed class PersonalTools
 
         try
         {
-            var saved = JsonSerializer.Deserialize<PersonalTools>(File.ReadAllText(path), JsonOptions);
+            var saved = JsonSerializer.Deserialize<PersonalNotesData>(File.ReadAllText(path), JsonOptions);
             if (saved == null) return false;
 
             LobbyNotes = saved.LobbyNotes ?? "";
@@ -35,7 +35,7 @@ internal sealed class PersonalTools
             Preset = saved.Preset ?? "";
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or System.Security.SecurityException)
         {
             return false;
         }
@@ -45,8 +45,27 @@ internal sealed class PersonalTools
     {
         var path = GetPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
+        var data = new PersonalNotesData
+        {
+            LobbyNotes = LobbyNotes,
+            RoleGuide = RoleGuide,
+            TaskReference = TaskReference,
+            MeetingNotes = MeetingNotes,
+            Preset = Preset
+        };
+        File.WriteAllText(path, JsonSerializer.Serialize(data, JsonOptions));
     }
 
     private static string GetPath() => Path.Combine(Paths.ConfigPath, "NyxoMenu", FileName);
+}
+
+public sealed class PersonalNotesData
+{
+    public string LobbyNotes { get; set; } = "";
+    public string RoleGuide { get; set; } = "";
+    public string TaskReference { get; set; } = "";
+    public string MeetingNotes { get; set; } = "";
+    public string Preset { get; set; } = "";
+
+    public PersonalNotesData() { }
 }

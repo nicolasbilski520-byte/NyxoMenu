@@ -87,7 +87,7 @@ public sealed class MenuBehaviour : MonoBehaviour
         GUILayout.EndHorizontal();
         GUILayout.Space(14);
         GUILayout.Label("QUICK ACTIONS", Header());
-        if (GUILayout.Button("Create a new round memory", GUILayout.Height(34))) { _memory.NewRound(); _status = "New local round memory created."; }
+        if (GUILayout.Button("Create a new round memory", GUILayout.Height(34))) _status = _memory.NewRound() ? "New local round memory created." : "New round created, but it could not be saved.";
         GUILayout.Label("All player, lobby and event details are entered manually. Screenshot capture requires separate opt-in and an explicit click.", Muted());
     }
 
@@ -105,23 +105,23 @@ public sealed class MenuBehaviour : MonoBehaviour
         if (GUILayout.Button("Load preset")) _status = _host.LoadPreset() ? "Planner preset loaded." : "No valid saved planner preset was found.";
         if (GUILayout.Button("Random suggestion")) { _host.Randomize(); _status = "Generated a draft suggestion."; }
         GUILayout.EndHorizontal();
-        _host.Roles = Field("Role configuration notes", _host.Roles);
-        _host.Rules = Field("Rules (one per line)", _host.Rules);
+        _host.Roles = MultiLineField("Role configuration notes", _host.Roles, 70);
+        _host.Rules = MultiLineField("Rules (one per line)", _host.Rules, 90);
         GUILayout.Label("Preset: " + _host.PresetName);
     }
 
     private void NonHostTab()
     {
         GUILayout.Label("NON-HOST / PERSONAL TOOLS", Header());
-        _personal.LobbyNotes = Field("Lobby settings observed (manual)", _personal.LobbyNotes);
-        _personal.RoleGuide = Field("Role guide notes", _personal.RoleGuide);
-        _personal.TaskReference = Field("Task reference", _personal.TaskReference);
-        _personal.MeetingNotes = Field("Personal meeting notes", _personal.MeetingNotes);
-        _personal.Preset = Field("Personal preset", _personal.Preset);
+        _personal.LobbyNotes = MultiLineField("Lobby settings observed (manual)", _personal.LobbyNotes, 70);
+        _personal.RoleGuide = MultiLineField("Role guide notes", _personal.RoleGuide, 70);
+        _personal.TaskReference = MultiLineField("Task reference", _personal.TaskReference, 70);
+        _personal.MeetingNotes = MultiLineField("Personal meeting notes", _personal.MeetingNotes, 80);
+        _personal.Preset = MultiLineField("Personal preset", _personal.Preset, 70);
         if (GUILayout.Button("Save personal notes"))
         {
             try { _personal.Save(); _status = "Personal notes saved locally."; }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _status = "Could not save personal notes."; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or NotSupportedException) { _status = "Could not save personal notes."; }
         }
     }
 
@@ -130,10 +130,10 @@ public sealed class MenuBehaviour : MonoBehaviour
         GUILayout.Label("MEMORY AI / ROUND JOURNAL", Header());
         GUILayout.Label("No game data is read automatically. Enter only information you are allowed to record.", Muted());
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("New round")) _memory.NewRound();
+        if (GUILayout.Button("New round")) _status = _memory.NewRound() ? "New local round memory created." : "New round created, but it could not be saved.";
         if (GUILayout.Button("Pause / resume journal")) _memory.TogglePause();
-        if (GUILayout.Button("Save summary")) { _memory.Save(); _status = "Round memory saved."; }
-        if (GUILayout.Button("Delete all round data")) { _memory.DeleteAll(); _status = "Round memories and saved screenshots deleted."; }
+        if (GUILayout.Button("Save summary")) _status = _memory.Save() ? "Round memory saved." : "Could not save round memory.";
+        if (GUILayout.Button("Delete all round data")) _status = _memory.DeleteAll() ? "Round memories and saved screenshots deleted." : "Could not delete all round data.";
         GUILayout.EndHorizontal();
         if (_memory.Current == null)
         {
@@ -142,10 +142,9 @@ public sealed class MenuBehaviour : MonoBehaviour
         }
         GUILayout.Label(_memory.Paused ? "JOURNAL PAUSED" : "JOURNAL ACTIVE", Header());
         _input = Field("Add observation, statement, or reported event", _input);
-        if (GUILayout.Button("Add to timeline")) { _memory.AddObservation(_input); _input = ""; }
+        if (GUILayout.Button("Add to timeline")) { _status = _memory.AddObservation(_input) ? "Observation added and saved." : "Observation was not added (journal paused/empty or save failed)."; _input = ""; }
         GUILayout.Label("Round summary / question (local evidence only)");
-        var query = GUILayout.TextField(_memory.Query, GUILayout.MinHeight(60));
-        _memory.Query = query;
+        _memory.Query = GUILayout.TextArea(_memory.Query, GUILayout.MinHeight(60));
         if (GUILayout.Button("Summarize / answer from notes")) _memory.AnswerFromNotes();
         GUILayout.TextArea(_memory.Answer, GUILayout.MinHeight(60));
         GUILayout.Label("Timeline", Header());
@@ -159,7 +158,8 @@ public sealed class MenuBehaviour : MonoBehaviour
             var path = _memory.CaptureScreenshot(PluginConfig.ScreenshotConsent.Value);
             _status = path == null ? "Capture blocked: opt-in required or journal unavailable." : "Screenshot requested: " + path;
         }
-        if (GUILayout.Button("Analyze latest saved screenshot")) _memory.AnalyzeLatestScreenshot();
+        if (GUILayout.Button(_memory.AnalysisInProgress ? "Analysis in progress…" : "Analyze latest saved screenshot") && !_memory.AnalysisInProgress)
+            _memory.AnalyzeLatestScreenshot();
         if (GUILayout.Button("Delete saved screenshots")) _memory.DeleteScreenshots();
         GUILayout.Label(_memory.AiStatus, Muted());
         GUILayout.Label("AI output is an uncertain interpretation, not proof of hidden roles. Captures are saved locally and sent only after Analyze is clicked.", Muted());
@@ -179,7 +179,7 @@ public sealed class MenuBehaviour : MonoBehaviour
         PluginConfig.Scale.Value = GUILayout.HorizontalSlider(PluginConfig.Scale.Value, .75f, 1.5f);
         GUILayout.Label($"Interface scale: {PluginConfig.Scale.Value:0.00}");
         GUILayout.Label("Toggle key is configured in BepInEx/config/com.nicolasbilski520byte.nyxomenu.cfg (restart may be needed).", Muted());
-        GUILayout.Label("Vision service: OpenAI-compatible chat-completions endpoint; configure URL, model and API key in the BepInEx config file.", Muted());
+        GUILayout.Label("Vision service: HTTPS OpenAI-compatible chat-completions endpoint. HTTP is allowed only for a local loopback development endpoint without an API key. Configure settings in the BepInEx config file.", Muted());
         GUILayout.Label("The API key is plaintext on disk. Never configure a service you do not trust.", Muted());
         if (GUILayout.Button("Hide window")) _visible = false;
     }
@@ -194,6 +194,11 @@ public sealed class MenuBehaviour : MonoBehaviour
     {
         GUILayout.Label(label);
         return GUILayout.TextField(value ?? "", GUILayout.MinHeight(25));
+    }
+    private static string MultiLineField(string label, string value, float height)
+    {
+        GUILayout.Label(label);
+        return GUILayout.TextArea(value ?? "", GUILayout.MinHeight(height));
     }
     private static GUIStyle Header() => new(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold };
     private static GUIStyle Muted() => new(GUI.skin.label) { normal = { textColor = Theme.Muted }, wordWrap = true };
