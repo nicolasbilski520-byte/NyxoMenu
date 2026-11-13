@@ -19,6 +19,7 @@
   <Target Name="ValidateBepInExReferences" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.Core.dll')" Text="BepInEx.Core.dll not found. Set -p:BepInExDir to the installed BepInEx directory." />
     <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.Unity.IL2CPP.dll')" Text="BepInEx.Unity.IL2CPP.dll not found. Use a matching BepInEx 6 IL2CPP installation." />
+    <Error Condition="!Exists('$(BepInExDir)/core/Il2CppInterop.Runtime.dll')" Text="Il2CppInterop.Runtime.dll not found. Use a matching BepInEx 6 IL2CPP installation." />
     <Error Condition="!Exists('$(BepInExDir)/interop/UnityEngine.CoreModule.dll')" Text="UnityEngine.CoreModule.dll not found in BepInEx/interop. Check your installation layout." />
   </Target>
 </Project>

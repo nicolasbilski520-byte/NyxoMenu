@@ -29,6 +29,7 @@ public sealed class MenuBehaviour : MonoBehaviour
         _store = new RoundStore();
         _memory = new RoundMemoryService(_store);
         _stats = new StatisticsService(_store);
+        _personal.Load();
     }
 
     private void Update()
@@ -100,8 +101,8 @@ public sealed class MenuBehaviour : MonoBehaviour
         _host.Cooldown = Field("Emergency cooldown", _host.Cooldown);
         _host.Discussion = Field("Discussion time", _host.Discussion);
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Save preset")) { _host.SavePreset(); _status = "Planner preset saved locally."; }
-        if (GUILayout.Button("Load preset")) _host.LoadPreset();
+        if (GUILayout.Button("Save preset")) _status = _host.SavePreset() ? "Planner preset saved locally." : "Could not save planner preset.";
+        if (GUILayout.Button("Load preset")) _status = _host.LoadPreset() ? "Planner preset loaded." : "No valid saved planner preset was found.";
         if (GUILayout.Button("Random suggestion")) { _host.Randomize(); _status = "Generated a draft suggestion."; }
         GUILayout.EndHorizontal();
         _host.Roles = Field("Role configuration notes", _host.Roles);
@@ -117,7 +118,11 @@ public sealed class MenuBehaviour : MonoBehaviour
         _personal.TaskReference = Field("Task reference", _personal.TaskReference);
         _personal.MeetingNotes = Field("Personal meeting notes", _personal.MeetingNotes);
         _personal.Preset = Field("Personal preset", _personal.Preset);
-        if (GUILayout.Button("Save personal notes")) { _personal.Save(); _status = "Personal notes saved locally."; }
+        if (GUILayout.Button("Save personal notes"))
+        {
+            try { _personal.Save(); _status = "Personal notes saved locally."; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _status = "Could not save personal notes."; }
+        }
     }
 
     private void MemoryTab()
@@ -147,13 +152,12 @@ public sealed class MenuBehaviour : MonoBehaviour
         foreach (var item in _memory.Current.Timeline.TakeLast(30)) GUILayout.Label($"[{item.Time:HH:mm:ss}] {item.Text}");
         GUILayout.Space(10);
         GUILayout.Label("SCREENSHOT ANALYSIS (optional; external service)", Header());
-        GUILayout.Toggle(PluginConfig.ScreenshotConsent.Value, "I have permission to capture this screen");
         var consent = GUILayout.Toggle(PluginConfig.ScreenshotConsent.Value, "I have appropriate permission; enable explicit capture");
         if (consent != PluginConfig.ScreenshotConsent.Value) PluginConfig.ScreenshotConsent.Value = consent;
         if (GUILayout.Button("Capture screenshot now (explicit action)"))
         {
-            var path = _memory.CaptureScreenshot(consent);
-            _status = path == null ? "Capture blocked: opt-in required." : "Screenshot requested: " + path;
+            var path = _memory.CaptureScreenshot(PluginConfig.ScreenshotConsent.Value);
+            _status = path == null ? "Capture blocked: opt-in required or journal unavailable." : "Screenshot requested: " + path;
         }
         if (GUILayout.Button("Analyze latest saved screenshot")) _memory.AnalyzeLatestScreenshot();
         if (GUILayout.Button("Delete saved screenshots")) _memory.DeleteScreenshots();
