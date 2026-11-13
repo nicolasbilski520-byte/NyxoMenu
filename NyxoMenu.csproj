@@ -18,6 +18,7 @@
     <Reference Include="UnityEngine.IMGUIModule" HintPath="$(BepInExDir)/interop/UnityEngine.IMGUIModule.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(BepInExDir)/interop/UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="UnityEngine.ScreenCaptureModule" HintPath="$(BepInExDir)/interop/UnityEngine.ScreenCaptureModule.dll" Private="false" />
+    <Reference Include="Il2Cppmscorlib" HintPath="$(BepInExDir)/interop/Il2Cppmscorlib.dll" Private="false" />
   </ItemGroup>
   <Target Name="ValidateBepInExReferences" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.Core.dll')" Text="BepInEx.Core.dll not found. Set -p:BepInExDir to the installed BepInEx directory." />
@@ -27,5 +28,6 @@
     <Error Condition="!Exists('$(BepInExDir)/interop/UnityEngine.IMGUIModule.dll')" Text="UnityEngine.IMGUIModule.dll not found in BepInEx/interop. Check your matching IL2CPP interop assemblies." />
     <Error Condition="!Exists('$(BepInExDir)/interop/UnityEngine.InputLegacyModule.dll')" Text="UnityEngine.InputLegacyModule.dll not found in BepInEx/interop. Check your matching IL2CPP interop assemblies." />
     <Error Condition="!Exists('$(BepInExDir)/interop/UnityEngine.ScreenCaptureModule.dll')" Text="UnityEngine.ScreenCaptureModule.dll not found in BepInEx/interop. Check your matching IL2CPP interop assemblies." />
+    <Error Condition="!Exists('$(BepInExDir)/interop/Il2Cppmscorlib.dll')" Text="Il2Cppmscorlib.dll not found in BepInEx/interop. Check your matching IL2CPP interop assemblies." />
   </Target>
 </Project>
